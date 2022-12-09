@@ -111,7 +111,26 @@ class ImdbWikiDatabasePreparer:
         urlretrieve('https://data.vision.ee.ethz.ch/cvl/rrothe/imdb-wiki/static/imdb_crop.tar',
                     os.path.join(database_directory, 'imdb_crop.tar'))
         with tarfile.open(os.path.join(database_directory, 'imdb_crop.tar')) as tar_file:
-            tar_file.extractall(path=database_directory)
+            def is_within_directory(directory, target):
+                
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+            
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+                
+                return prefix == abs_directory
+            
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+            
+                tar.extractall(path, members, numeric_owner=numeric_owner) 
+                
+            
+            safe_extract(tar_file, path=database_directory)
             os.remove(os.path.join(database_directory, 'imdb_crop.tar'))
         print('Done.')
 
